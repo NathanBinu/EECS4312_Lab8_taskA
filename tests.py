@@ -179,3 +179,108 @@ def test_a5_buffer_eliminates_small_gaps():
 #################################################################################
 # Add your own additional tests here to cover more cases and edge cases as needed.
 #################################################################################
+
+def test_edge_1_duration_longer_than_any_available_gap_returns_empty():
+    """
+    Edge case: Meeting duration is longer than any free segment inside working hours.
+    Expected: no valid slots.
+    """
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(10, 0))  # only 60 minutes total
+    busy = [
+        BusyInterval(time(9, 10), time(9, 55)),  # leaves only 9:00–9:10 (10 mins) and 9:55–10:00 (5 mins)
+    ]
+    duration = timedelta(minutes=20)
+
+    out = suggest_slots(day, working, busy, duration, n=10, buffer=timedelta(0), candidate_window=None)
+
+    assert_slots_basic_constraints(out, day, working, busy, duration, 10, timedelta(0), None)
+    assert out == []
+
+
+def test_edge_2_candidate_window_no_overlap_with_working_hours_returns_empty():
+    """
+    Edge case: Candidate window does not overlap working hours at all.
+    Expected: no valid slots.
+    """
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(12, 0))
+    candidate = TimeWindow(time(13, 0), time(14, 0))  # completely outside working hours
+    busy = []
+    duration = timedelta(minutes=15)
+
+    out = suggest_slots(day, working, busy, duration, n=10, buffer=timedelta(0), candidate_window=candidate)
+
+    assert out == []
+
+def test_edge_buffer_eliminates_small_gap_and_leaves_no_availability():
+    """
+    Edge case: Buffers can wipe out small gaps and remove remaining availability.
+    Expected: no valid slots.
+    """
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(10, 0))
+    busy = [
+        BusyInterval(time(9, 10), time(9, 20)),
+        BusyInterval(time(9, 30), time(9, 40)),
+        # This extra meeting near the end ensures the final free window is also destroyed by buffer
+        BusyInterval(time(9, 52), time(10, 0)),
+    ]
+    buffer = timedelta(minutes=6)
+    duration = timedelta(minutes=5)
+
+    out = suggest_slots(day, working, busy, duration, n=10, buffer=buffer, candidate_window=None)
+
+    assert_slots_basic_constraints(out, day, working, busy, duration, 10, buffer, None)
+    assert out == []
+
+
+def test_overlapping_busy_intervals_are_handled_as_one_block():
+    """
+    Busy intervals can overlap or be unsorted; the scheduler should treat the union as busy.
+    Expected: suggestions only outside the merged busy block.
+    """
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(12, 0))
+    # Overlap: 9:30–10:30 overlaps 10:00–11:00, union becomes 9:30–11:00
+    busy = [
+        BusyInterval(time(10, 0), time(11, 0)),
+        BusyInterval(time(9, 30), time(10, 30)),
+    ]
+    duration = timedelta(minutes=30)
+
+    out = suggest_slots(day, working, busy, duration, n=10, buffer=timedelta(0), candidate_window=None)
+
+    assert_slots_basic_constraints(out, day, working, busy, duration, 10, timedelta(0), None)
+
+    # Every returned slot must start either before 9:30 (and finish by 9:30),
+    # or at/after 11:00
+    for slot in out:
+        start = datetime.combine(day, slot.start_time)
+        end = start + duration
+        assert end <= datetime.combine(day, time(9, 30)) or start >= datetime.combine(day, time(11, 0))
+
+
+def test_deterministic_output_with_unsorted_busy_input():
+    """
+    Determinism: Reordering the same busy intervals should not change the output.
+    """
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(11, 0))
+    duration = timedelta(minutes=15)
+    buffer = timedelta(minutes=5)
+
+    busy1 = [
+        BusyInterval(time(9, 30), time(9, 45)),
+        BusyInterval(time(10, 10), time(10, 20)),
+        BusyInterval(time(9, 0), time(9, 10)),
+    ]
+    busy2 = list(reversed(busy1))  # same intervals, different order
+
+    out1 = suggest_slots(day, working, busy1, duration, n=10, buffer=buffer, candidate_window=None)
+    out2 = suggest_slots(day, working, busy2, duration, n=10, buffer=buffer, candidate_window=None)
+
+    assert_slots_basic_constraints(out1, day, working, busy1, duration, 10, buffer, None)
+    assert_slots_basic_constraints(out2, day, working, busy2, duration, 10, buffer, None)
+
+    assert out1 == out2
