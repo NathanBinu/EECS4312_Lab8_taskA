@@ -132,3 +132,49 @@ source .venv/bin/activate
 pip install pytest
 
 After recreating the environment and reinstalling dependencies, the tests should run correctly.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Task 6 - Persona Aware Prompting
+
+Prompt 5: I am updating an Appointment Slot Recommender system for Lab 9. 
+The system recommends available meeting slots within a working window. 
+Inputs are working hours, busy intervals, required meeting duration, 
+optional buffer time, optional candidate window, and maximum number of suggestions N. 
+The output is a list of suggested appointment slots.
+
+The personas are:
+
+Jane Adams (primary user): Jane is a busy professional who relies on automation to reduce cognitive load. She expects predictable system behavior, automatic handling of conflicts, concise outputs, and minimal information overload. She is frustrated by inconsistent system decisions and by having to manually verify system correctness.
+
+Mo Rodriguez (edge user): Mo has accessibility needs and is highly sensitive to uncertainty. Mo expects deterministic behavior, explicit handling of edge cases, and consistent outcomes in repeated or boundary scenarios. Mo is frustrated when system behavior appears arbitrary, when outcomes are unexplained, or when failures are silent.
+
+The current persona-derived constraints are:
+
+C1: The system must return appointment suggestions in deterministic chronological order based on start time.
+C2: The system must exclude any slot that overlaps with busy intervals or violates the configured buffer time.
+C3: The system must return no more than N suggested appointment slots.
+C4: The system must produce identical results when executed multiple times with identical inputs.
+C5: When multiple valid appointment slots exist, the system must prioritize earlier valid slots before later ones.
+C6: The system must return an empty result list when no valid appointment slot exists.
+C7: The system must correctly handle unsorted or overlapping busy intervals by treating their combined time range as unavailable.
+C8: The system must only return appointment slots that fully fit within the defined working hours and optional candidate window.
+
+The current acceptance criteria are:
+
+AC1: Returned appointment slots must be sorted by ascending start time.
+AC2: No returned slot may overlap any busy interval after buffer expansion.
+AC3: The number of returned slots must be less than or equal to N.
+AC4: Repeated execution with identical inputs must produce identical outputs.
+AC5: Returned slots must be fully contained within working hours and the candidate window.
+AC6: If no slot satisfies the duration and constraints, the returned result must be an empty list.
+
+Please review this specification only. Do not generate code yet. Identify any missing constraints, ambiguous requirements, overlapping or redundant constraints, or unhandled edge cases that should be revised before implementation begins.
+
+Prompt 7
+Task: I need clarification on my additional executable tests for verifying my scheduling constraints and acceptance criteria.
+Purpose: To ensure that the test suite covers ordering of slots, overlap handling, working-hour boundaries, and maximum suggestion limits.
+
+Prompt 8
+Task: I need assistance in diagnosing why pytest was not executing tests in tests.py.
+Purpose: To identify the issue with pytest test discovery and determine the correct command for running my test suite.

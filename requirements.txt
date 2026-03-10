@@ -1,0 +1,119 @@
+## 1. Problem Understanding - Describe the problem your system solves. 
+System purpose: The system recommends available appointment slots within a user's working hours while avoiding busy intervals and respecting meeting duration and buffer constraints.
+Inputs to the system: 
+
+    - Working hours (start time, end time)
+
+    - List of busy intervals
+
+    - Meeting duration
+
+    - Optional buffer time between meetings
+
+    - Optional candidate window restricting when suggestions may occur
+
+    - Maximum number of suggestions N
+
+Outputs produced by the system: A list of suggested appointment slots that satisfy all constraints.
+Primary goal of the system: Generate deterministic and valid meeting suggestions that avoid conflicts and remain predictable for users.
+
+--- 
+## 2. Assumptions - List assumptions about the environment, users, or inputs. 
+A1: All time values are valid datetime objects.
+A2: Busy intervals are represented as start–end pairs where start < end.
+A3: Working hours represent the maximum allowable scheduling window for a given day.
+A4: The meeting duration is a positive value.
+A5: Busy intervals may be unsorted or overlapping and must be normalized before scheduling.
+A6: The system may return fewer than N suggestions if insufficient valid slots exist.
+--- 
+## 3. Functional Requirements - Describe the main behaviors the system must perform. 
+FR1: The system shall compute available time slots within working hours that do not overlap with busy intervals.
+FR2: The system shall expand busy intervals by the configured buffer time before calculating availability.
+FR3: The system shall return appointment slots in deterministic chronological order based on start time. Derived from constraint C1 (Jane – predictable ordering).
+FR4: The system shall return at most N suggested appointment slots.
+FR5: The system shall return an empty list if no valid slot satisfies the meeting duration and scheduling constraints. Derived from constraint C6 (Mo – explicit handling of edge cases).
+FR6: The system shall normalize overlapping or unsorted busy intervals before evaluating availability. Derived from constraint C7 (Mo – consistent handling of irregular inputs).
+---
+## 4. System Constraints - Constraints are conditions the system must always respect. Each constraint should reference the persona attribute it originates from. 
+C1: Derived from persona attribute: Jane – Need for predictable ordering of system decisions. The system must return appointment suggestions in deterministic chronological order.
+C2: Derived from persona attribute: Jane – Behavior trusting the system to resolve conflicts automatically. The system must exclude time slots that overlap with busy intervals or violate the buffer constraint.
+C3: Derived from persona attribute: Jane – Need to avoid notification overload. The system must limit returned suggestions to at most N results.
+C4: Derived from persona attribute: Jane – Pain point related to inconsistent system behavior. The system must produce identical results when executed multiple times with identical inputs.
+C5: Derived from persona attribute: Mo – Need for deterministic system behavior under uncertainty. When multiple valid slots exist, earlier valid slots must be prioritized over later ones.
+C6: Derived from persona attribute: Mo – Need for explicit edge case handling. The system must return an empty list when no valid appointment slot exists.
+---
+## 5. Acceptance Criteria - Acceptance criteria define how system behavior will be verified. 
+AC1: Returned appointment slots must be sorted by ascending start time.
+AC2: No returned slot may overlap any busy interval after buffer expansion.
+AC3: The number of returned slots must be less than or equal to N.
+AC4: Repeated execution of the system with identical inputs must produce identical outputs.
+AC5: Returned slots must be fully contained within working hours and the candidate window.
+AC6: If no slot satisfies the duration and constraints, the returned result must be an empty list.
+---
+## 6. Edge Cases - Describe unusual or boundary situations the system must handle. 
+EC1: Busy intervals overlap or appear in unsorted order.
+Expected system behavior: The system merges overlapping intervals before computing available slots.
+EC2: No available free time exists within the working hours that satisfies the meeting duration.
+Expected system behavior: The system returns an empty list.
+EC3: The candidate window does not overlap with working hours.
+Expected system behavior: The system returns an empty list.
+--- 
+## 7. Traceability - Link functional requirements to constraints and acceptance criteria. FR → C → AC mapping FR1 → … (fill at least 6 items) FR6 → 
+FR1 → C2 → AC2
+FR2 → C2 → AC2
+FR3 → C1 → AC1
+FR4 → C3 → AC3
+FR5 → C6 → AC6
+FR6 → C7 → AC2
+---
+## Revision Notes
+(To be filled during Tasks 6 and 8)
+
+Task 6:
+
+1. Revision Note 1
+
+Requirement updated: C1 / C4 / C5 – Deterministic ordering of appointment slots
+Reason: During requirement review the LLM identified that these constraints overlapped and described similar deterministic behavior properties.
+Action: Clarified that the system must return appointment slots in deterministic chronological order and that identical inputs must always produce identical outputs.
+Triggered by LLM feedback: Yes
+
+
+2. Revision Note 2
+
+Requirement updated: FR7 – Slot duration validity
+Reason: The LLM review identified that the requirements did not explicitly state that generated slots must fully fit inside a free interval.
+Action: Added a functional requirement specifying that the system shall only generate slots whose full duration fits within an available free segment.
+Triggered by LLM feedback: Yes
+
+
+3. Revision Note 3
+
+Requirement updated: C9 – Candidate window intersection rule
+Reason: The review identified ambiguity regarding how the candidate window interacts with working hours.
+Action: Added a constraint specifying that the effective scheduling window must be the intersection of working hours and the candidate window when a candidate window is provided.
+Triggered by LLM feedback: Yes
+
+
+4. Revision Note 4
+
+Requirement updated: EC4 – Boundary slot handling
+Reason: The LLM identified missing edge cases related to boundary conditions.
+Action: Added an edge case specifying that a slot ending exactly at the working hours boundary is valid if it does not exceed the allowed window.
+Triggered by LLM feedback: Yes
+
+
+5. Revision Note 5
+
+Requirement updated: EC5 – Busy interval boundary interaction
+Reason: The review identified that the behavior when a slot begins exactly at the end of a busy interval was not clearly defined.
+Action: Added an edge case specifying that a slot beginning exactly at the end of a busy interval is valid provided it does not violate the buffer constraint.
+Triggered by LLM feedback: Yes
+
+
+6. Revision Note 6
+
+Requirement updated: C10 – Invalid input handling
+Reason: The LLM review identified that behavior for invalid input values was not defined in the specification.
+Action: Added a constraint specifying that invalid inputs (such as negative duration, invalid intervals, or invalid working hours) should result in an empty result instead of undefined behavior.
+Triggered by LLM feedback: Yes

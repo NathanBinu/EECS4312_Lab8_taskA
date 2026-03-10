@@ -1,0 +1,55 @@
+Prompt 1:
+What makes a system constraint testable in software requirements engineering?
+
+Purpose: Clarify how to write constraints so they can be verified with tests.
+
+Response summary: The response explained that constraints should describe observable 
+system behavior, avoid vague terms, and include measurable conditions that can be 
+verified through testing.
+
+---------------------------------------------------------------------------------------
+
+Prompt 2:
+How can deterministic system behavior be expressed as a requirement?
+
+Purpose: Understand how to convert a persona need for consistency into a testable system constraint.
+
+Response summary:
+The response suggested specifying consistent ordering rules and ensuring identical inputs always produce identical outputs.
+
+---------------------------------------------------------------------------------------
+
+Prompt 3:
+What types of edge cases should be considered when designing scheduling systems?
+
+Purpose: Brainstorm possible edge cases relevant to the scheduling system.
+
+Response summary:
+The response suggested considering overlapping busy intervals, 
+candidate windows outside working hours, and situations where no valid slot exists.
+
+---------------------------------------------------------------------------------------
+
+Prompt 4:
+How can acceptance criteria be defined for a scheduling algorithm?
+
+Purpose: Ensure that each constraint has a clear measurable condition.
+
+Response summary:
+The response suggested defining criteria such as slot ordering, 
+absence of overlap with busy intervals, and respecting limits like N suggestions.
+
+---------------------------------------------------------------------------------------
+
+Prompt 5:
+How can unsorted or overlapping busy intervals affect scheduling logic?
+
+Purpose: Confirm that busy intervals should be normalized before computing availability.
+
+Response summary:
+The response explained that overlapping or unsorted intervals should be
+merged to avoid incorrect availability calculations.
+
+---------------------------------------------------------------------------------------
+
+

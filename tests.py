@@ -284,3 +284,198 @@ def test_deterministic_output_with_unsorted_busy_input():
     assert_slots_basic_constraints(out2, day, working, busy2, duration, 10, buffer, None)
 
     assert out1 == out2
+
+#################################################################################
+## Additional tests added for Lab 9 persona-derived constraints (C1–C8)
+## that covers deterministic behavior, ordering, limits, edge cases and buffers.
+#################################################################################
+
+# Covers C1, C5, AC1
+def test_slots_are_sorted_chronologically():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(17, 0))
+    busy = [
+        BusyInterval(time(10, 0), time(11, 0)),
+        BusyInterval(time(13, 0), time(14, 0)),
+    ]
+    duration = timedelta(minutes=30)
+
+    slots = suggest_slots(
+        day=day,
+        working_hours=working,
+        busy_intervals=busy,
+        duration=duration,
+        n=5,
+        buffer=timedelta(0),
+        candidate_window=None
+    )
+
+    assert slots == sorted(slots, key=lambda s: s.start_time)
+
+
+# Covers C2, AC2
+def test_no_overlap_with_busy_intervals():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(17, 0))
+    busy = [BusyInterval(time(10, 0), time(11, 0))]
+    duration = timedelta(minutes=30)
+
+    slots = suggest_slots(
+        day=day,
+        working_hours=working,
+        busy_intervals=busy,
+        duration=duration,
+        n=5,
+        buffer=timedelta(0),
+        candidate_window=None
+    )
+
+    assert_slots_basic_constraints(
+        slots,
+        day,
+        working,
+        busy,
+        duration,
+        5,
+        timedelta(0),
+        None
+    )
+
+
+# Covers C3, AC3
+def test_respects_maximum_number_of_suggestions():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(17, 0))
+    busy = []
+    duration = timedelta(minutes=30)
+
+    slots = suggest_slots(
+        day=day,
+        working_hours=working,
+        busy_intervals=busy,
+        duration=duration,
+        n=2,
+        buffer=timedelta(0),
+        candidate_window=None
+    )
+
+    assert len(slots) <= 2
+
+
+
+# Covers C6, AC6
+def test_returns_empty_when_no_slots_available():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(10, 0))
+    busy = [BusyInterval(time(9, 0), time(10, 0))]
+    duration = timedelta(minutes=30)
+
+    slots = suggest_slots(
+        day=day,
+        working_hours=working,
+        busy_intervals=busy,
+        duration=duration,
+        n=5,
+        buffer=timedelta(0),
+        candidate_window=None
+    )
+
+    assert slots == []
+
+# Covers C8, AC5
+def test_slots_within_working_hours():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(12, 0))
+    busy = []
+    duration = timedelta(minutes=30)
+
+    slots = suggest_slots(
+        day=day,
+        working_hours=working,
+        busy_intervals=busy,
+        duration=duration,
+        n=5,
+        buffer=timedelta(0),
+        candidate_window=None
+    )
+
+    for slot in slots:
+        start_dt = combine(day, slot.start_time)
+        end_dt = start_dt + duration
+        assert slot.start_time >= working.start
+        assert end_dt <= combine(day, working.end)
+
+# Covers C4, AC4
+def test_repeated_identical_inputs_produce_identical_outputs():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(11, 0))
+    busy = [
+        BusyInterval(time(9, 30), time(9, 45)),
+        BusyInterval(time(10, 10), time(10, 20)),
+    ]
+    duration = timedelta(minutes=15)
+    buffer = timedelta(minutes=5)
+
+    out1 = suggest_slots(day, working, busy, duration, n=10, buffer=buffer, candidate_window=None)
+    out2 = suggest_slots(day, working, busy, duration, n=10, buffer=buffer, candidate_window=None)
+
+    assert out1 == out2
+
+
+# Covers C8, AC5
+def test_slots_within_working_hours():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(12, 0))
+    busy = []
+    duration = timedelta(minutes=30)
+
+    slots = suggest_slots(
+        day=day,
+        working_hours=working,
+        busy_intervals=busy,
+        duration=duration,
+        n=5,
+        buffer=timedelta(0),
+        candidate_window=None
+    )
+
+    for slot in slots:
+        start_dt = combine(day, slot.start_time)
+        end_dt = start_dt + duration
+        assert slot.start_time >= working.start
+        assert end_dt <= combine(day, working.end)
+
+
+# Covers C7, AC2
+def test_adjacent_busy_intervals_are_treated_as_one_continuous_block():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(11, 0))
+    busy = [
+        BusyInterval(time(9, 0), time(9, 30)),
+        BusyInterval(time(9, 30), time(10, 0)),
+    ]
+    duration = timedelta(minutes=30)
+
+    out = suggest_slots(day, working, busy, duration, n=10, buffer=timedelta(0), candidate_window=None)
+
+    assert out == [
+        Slot(start_time=time(10, 0)),
+        Slot(start_time=time(10, 5)),
+        Slot(start_time=time(10, 10)),
+        Slot(start_time=time(10, 15)),
+        Slot(start_time=time(10, 20)),
+        Slot(start_time=time(10, 25)),
+        Slot(start_time=time(10, 30)),
+    ]
+
+
+# Covers C3, AC3 (edge case)
+def test_n_zero_returns_empty_list_immediately():
+    day = date(2026, 2, 24)
+    working = TimeWindow(time(9, 0), time(12, 0))
+    busy = []
+    duration = timedelta(minutes=15)
+
+    out = suggest_slots(day, working, busy, duration, n=0, buffer=timedelta(0), candidate_window=None)
+
+    assert out == []
